@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "ACE",
+  "version": "1.0.1",
+  "description": "Acceptance Criteria Exterminator - Generate cucumber syntax, translate between Chinese and English, and polish English text using LLM",
+  "permissions": ["activeTab", "storage", "scripting", "sidePanel"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "action": {
+    "default_title": "Click me"
+  },
+  "side_panel": {
+    "default_path": "index.html"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon16.png"
+  }
+}
