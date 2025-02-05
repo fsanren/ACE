@@ -5,15 +5,29 @@
       >Back to Home</router-link
     >
     <div class="mb-4">
-      <label for="apiKey" class="block text-sm font-medium text-gray-700"
-        >DEEPSEEK API Key</label
+      <label for="apiProvider" class="block text-sm font-medium text-gray-700"
+        >API Provider</label
       >
+      <select
+        id="apiProvider"
+        v-model="apiProvider"
+        class="mt-1 block w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="deepseek">DeepSeek</option>
+        <option value="azure">Azure OpenAI</option>
+        <option value="kimi">Kimi</option>
+      </select>
+    </div>
+    <div class="mb-4">
+      <label for="apiKey" class="block text-sm font-medium text-gray-700">{{
+        getApiKeyLabel(apiProvider)
+      }}</label>
       <input
         id="apiKey"
         v-model="apiKey"
         type="text"
         class="mt-1 block w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        placeholder="Enter your DEEPSEEK API Key"
+        :placeholder="getApiKeyPlaceholder(apiProvider)"
       />
     </div>
     <button
@@ -30,16 +44,33 @@ import { ref } from "vue";
 
 defineOptions({ name: "Settings" });
 
-const apiKey = ref(localStorage.getItem("DEEPSEEK_API_KEY") || "");
+const apiKey = ref(localStorage.getItem("API_KEY") || "");
+const apiProvider = ref(localStorage.getItem("API_PROVIDER") || "deepseek");
 
 const saveApiKey = () => {
   if (typeof chrome !== "undefined" && chrome.storage) {
-    chrome.storage.sync.set({ DEEPSEEK_API_KEY: apiKey.value }, () => {
-      alert("API Key saved to browser extension storage!");
-    });
+    chrome.storage.sync.set(
+      { API_KEY: apiKey.value, API_PROVIDER: apiProvider.value },
+      () => {
+        alert("Settings saved to browser extension storage!");
+      }
+    );
   } else {
-    localStorage.setItem("DEEPSEEK_API_KEY", apiKey.value);
-    alert("API Key saved to local storage!");
+    localStorage.setItem("API_KEY", apiKey.value);
+    localStorage.setItem("API_PROVIDER", apiProvider.value);
+    alert("Settings saved to local storage!");
   }
+};
+
+const getApiKeyLabel = (provider: string) => {
+  if (provider === "azure") return "Azure OpenAI API Key";
+  if (provider === "kimi") return "Kimi API Key";
+  return "DeepSeek API Key";
+};
+
+const getApiKeyPlaceholder = (provider: string) => {
+  if (provider === "azure") return "Enter your Azure OpenAI API Key";
+  if (provider === "kimi") return "Enter your Kimi API Key";
+  return "Enter your DeepSeek API Key";
 };
 </script>

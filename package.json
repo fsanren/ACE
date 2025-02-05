@@ -1,7 +1,7 @@
 {
-  "name": "vue-translator-extension",
+  "name": "ace-extension",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
