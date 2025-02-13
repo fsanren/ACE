@@ -13,7 +13,7 @@ const client = axios.create({
 
 client.interceptors.request.use(async (config) => {
   let apiKey = localStorage.getItem("API_KEY");
-  let apiProvider = localStorage.getItem("API_PROVIDER") || "deepseek";
+  let apiProvider = await getApiProvider();
   if (typeof chrome !== "undefined" && chrome.storage) {
     const storage = await new Promise((resolve) => {
       chrome.storage.sync.get(["API_KEY", "API_PROVIDER"], (items) => {
@@ -37,8 +37,25 @@ const getApiUrl = (provider: string) => {
   return DEEPSEEK_API_URL;
 };
 
+const getApiProvider = async () => {
+  try {
+    if (chrome?.storage?.sync) {
+      const result = await chrome.storage.sync.get(["API_PROVIDER"]);
+      return (
+        result.API_PROVIDER ||
+        localStorage.getItem("API_PROVIDER") ||
+        "deepseek"
+      );
+    }
+    return localStorage.getItem("API_PROVIDER") || "deepseek";
+  } catch (error) {
+    console.error("Error getting API provider:", error);
+    return localStorage.getItem("API_PROVIDER") || "deepseek";
+  }
+};
+
 async function makeRequest(prompt: string, temperature: number) {
-  const apiProvider = localStorage.getItem("API_PROVIDER") || "deepseek";
+  const apiProvider = await getApiProvider();
   const model = getModel(apiProvider);
 
   const response = await client.post("", {

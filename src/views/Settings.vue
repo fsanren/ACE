@@ -44,8 +44,34 @@ import { ref } from "vue";
 
 defineOptions({ name: "Settings" });
 
-const apiKey = ref(localStorage.getItem("API_KEY") || "");
-const apiProvider = ref(localStorage.getItem("API_PROVIDER") || "deepseek");
+const apiKey = ref("");
+const apiProvider = ref("deepseek"); // default value
+
+const initializeSettings = async () => {
+  try {
+    // Check if Chrome storage API is available
+    if (chrome?.storage?.sync) {
+      const result = await chrome.storage.sync.get(["API_KEY", "API_PROVIDER"]);
+      apiKey.value = result.API_KEY || localStorage.getItem("API_KEY") || "";
+      apiProvider.value =
+        result.API_PROVIDER ||
+        localStorage.getItem("API_PROVIDER") ||
+        "deepseek";
+    } else {
+      // Fallback to localStorage
+      apiKey.value = localStorage.getItem("API_KEY") || "";
+      apiProvider.value = localStorage.getItem("API_PROVIDER") || "deepseek";
+    }
+  } catch (error) {
+    console.error("Error loading settings:", error);
+    // Fallback to localStorage on error
+    apiKey.value = localStorage.getItem("API_KEY") || "";
+    apiProvider.value = localStorage.getItem("API_PROVIDER") || "deepseek";
+  }
+};
+
+// Call the initialization function
+initializeSettings();
 
 const saveApiKey = () => {
   if (typeof chrome !== "undefined" && chrome.storage) {
