@@ -129,3 +129,15 @@ export async function generateCucumberSyntax(text: string): Promise<string> {
     throw new Error("Failed to generate Cucumber syntax");
   }
 }
+
+export async function translateWordWithEtymology(word: string): Promise<string> {
+  try {
+    const prompt = `翻译下面的英文单词并解释对应词根:
+    ${word}`;
+
+    return await makeRequest(prompt, 0);
+  } catch (error) {
+    console.error("Word translation and etymology error:", error);
+    throw new Error("Failed to translate word and explain etymology");
+  }
+}

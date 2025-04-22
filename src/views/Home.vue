@@ -1,6 +1,5 @@
 <template>
   <div class="min-h-[300px] p-4 bg-gray-50">
-    <h1 class="text-xl font-bold mb-4">Translator</h1>
     <router-link to="/settings" class="text-blue-500 underline mb-4 block"
       >Settings</router-link
     >
@@ -44,25 +43,37 @@
         :disabled="isLoading"
       >
         To Cucumber
-      </button>
-      <button
+      </button>      <button
         @click="polishEnglish"
         class="flex-1 px-2 py-1 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
         :disabled="isLoading"
       >
         Polish
-      </button>
-      <div class="relative">
+      </button>      <div class="relative">
         <button
-          class="flex-1 px-2 py-1 text-blue-500 underline hover:text-blue-600 transition"
-          @click="toggleDropdown"
+          class="flex-1 px-2 py-1 text-gray-700 hover:text-blue-600 transition"
+          aria-label="More options"
+          @mouseenter="isHovering = true"
+          @mouseleave="isHovering = false"
         >
-          More
-        </button>
-        <div
-          v-if="isDropdownOpen"
-          class="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg"
-        >
+          <div class="w-5 h-5 flex flex-col items-center justify-center mx-auto">
+            <span class="w-1 h-1 bg-current rounded-full mb-0.5"></span>
+            <span class="w-1 h-1 bg-current rounded-full mb-0.5"></span>
+            <span class="w-1 h-1 bg-current rounded-full"></span>
+          </div>
+        </button>        <div
+          class="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg transition-all duration-300 z-10"
+          :class="{ 'opacity-0 invisible': !keepDropdownOpen && !isHovering, 'opacity-100 visible': keepDropdownOpen || isHovering }"
+          @mouseenter="keepDropdownOpen = true"
+          @mouseleave="keepDropdownOpen = false"
+        >        
+          <button
+            @click="translateWordWithEtymology"
+            class="block w-full px-4 py-2 text-left text-black hover:bg-gray-100"
+            :disabled="isLoading"
+          >
+            单词词根
+          </button>
           <button
             @click="summarizeCurrentPage"
             class="block w-full px-4 py-2 text-left text-black hover:bg-gray-100"
@@ -70,6 +81,7 @@
           >
             Summarize Web
           </button>
+  
         </div>
       </div>
     </div>
@@ -105,6 +117,7 @@ import {
   polishText,
   summarizeText,
   generateCucumberSyntax as generateCucumberSyntaxAPI,
+  translateWordWithEtymology as translateWordWithEtymologyAPI,
 } from "../services/deepseek";
 defineOptions({ name: "Home" });
 
@@ -198,9 +211,21 @@ const generateCucumberSyntax = async () => {
   }
 };
 
-const isDropdownOpen = ref(false);
-
-const toggleDropdown = () => {
-  isDropdownOpen.value = !isDropdownOpen.value;
+const translateWordWithEtymology = async () => {
+  if (!inputText.value) return;
+  try {
+    isLoading.value = true;
+    error.value = "";
+    outputText.value = await translateWordWithEtymologyAPI(inputText.value);
+  } catch (err) {
+    error.value = "Failed to translate word and explain etymology. Please try again.";
+    console.error(err);
+  } finally {
+    isLoading.value = false;
+  }
 };
+
+// State for dropdown menu
+const keepDropdownOpen = ref(false);
+const isHovering = ref(false);
 </script>
