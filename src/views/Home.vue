@@ -1,8 +1,13 @@
 <template>
   <div class="min-h-[300px] p-4 bg-gray-50">
-    <router-link to="/settings" class="text-blue-500 underline mb-4 block"
-      >Settings</router-link
-    >
+    <div class="flex gap-4 mb-4">
+      <router-link to="/settings" class="text-blue-500 underline"
+        >Settings</router-link
+      >
+      <router-link to="/favorites" class="text-blue-500 underline"
+        >Favorites</router-link
+      >
+    </div>
     <!-- Input Section -->
     <div class="mb-4">
       <div class="relative">
@@ -96,12 +101,21 @@
     <div v-if="outputText" class="border rounded-lg p-3 bg-white">
       <h2 class="font-semibold mb-2">Result:</h2>
       <p class="whitespace-pre-wrap">{{ outputText }}</p>
-      <button
-        @click="copyToClipboard"
-        class="mt-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
-      >
-        Copy Result
-      </button>
+      <div class="flex gap-2 mt-2">
+        <button
+          @click="copyToClipboard"
+          class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+        >
+          Copy Result
+        </button>
+        <button
+          v-if="currentAction === 'translateWordWithEtymology'"
+          @click="saveToFavorites"
+          class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
+        >
+          {{ isFavorite ? 'Saved' : 'Save to Favorites' }}
+        </button>
+      </div>
     </div>
 
     <div v-if="error" class="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">
@@ -111,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import {
   translateText,
   polishText,
@@ -125,10 +139,30 @@ const inputText = ref("");
 const outputText = ref("");
 const isLoading = ref(false);
 const error = ref("");
+const currentAction = ref("");
+const isFavorite = ref(false);
+const favorites = ref<any[]>([]);
+
+// Load favorites from storage on component mount
+onMounted(async () => {
+  try {
+    if (chrome?.storage?.local) {
+      const result = await chrome.storage.local.get(["favorites"]);
+      favorites.value = result.favorites || [];
+    } else {
+      const savedFavorites = localStorage.getItem("favorites");
+      favorites.value = savedFavorites ? JSON.parse(savedFavorites) : [];
+    }
+  } catch (err) {
+    console.error("Failed to load favorites:", err);
+    favorites.value = [];
+  }
+});
 
 const translateToChinese = async () => {
   if (!inputText.value) return;
   try {
+    currentAction.value = "translateToChinese";
     isLoading.value = true;
     error.value = "";
     outputText.value = await translateText(inputText.value, "en", "zh");
@@ -143,6 +177,7 @@ const translateToChinese = async () => {
 const translateToEnglish = async () => {
   if (!inputText.value) return;
   try {
+    currentAction.value = "translateToEnglish";
     isLoading.value = true;
     error.value = "";
     outputText.value = await translateText(inputText.value, "zh", "en");
@@ -157,6 +192,7 @@ const translateToEnglish = async () => {
 const polishEnglish = async () => {
   if (!inputText.value) return;
   try {
+    currentAction.value = "polishEnglish";
     isLoading.value = true;
     error.value = "";
     outputText.value = await polishText(inputText.value);
@@ -170,6 +206,7 @@ const polishEnglish = async () => {
 
 const summarizeCurrentPage = async () => {
   try {
+    currentAction.value = "summarizeCurrentPage";
     isLoading.value = true;
     error.value = "";
     chrome.storage.local.get("pageContent", async (data) => {
@@ -200,6 +237,7 @@ const copyToClipboard = async () => {
 const generateCucumberSyntax = async () => {
   if (!inputText.value) return;
   try {
+    currentAction.value = "generateCucumberSyntax";
     isLoading.value = true;
     error.value = "";
     outputText.value = await generateCucumberSyntaxAPI(inputText.value);
@@ -214,14 +252,58 @@ const generateCucumberSyntax = async () => {
 const translateWordWithEtymology = async () => {
   if (!inputText.value) return;
   try {
+    currentAction.value = "translateWordWithEtymology";
     isLoading.value = true;
     error.value = "";
     outputText.value = await translateWordWithEtymologyAPI(inputText.value);
+    
+    // Check if this result is already in favorites
+    if (chrome?.storage?.local) {
+      const result = await chrome.storage.local.get(["favorites"]);
+      const savedFavorites = result.favorites || [];
+      isFavorite.value = savedFavorites.some((fav: any) => fav.input === inputText.value);
+    } else {
+      const savedFavorites = localStorage.getItem("favorites");
+      const parsedFavorites = savedFavorites ? JSON.parse(savedFavorites) : [];
+      isFavorite.value = parsedFavorites.some((fav: any) => fav.input === inputText.value);
+    }
   } catch (err) {
     error.value = "Failed to translate word and explain etymology. Please try again.";
     console.error(err);
   } finally {
     isLoading.value = false;
+  }
+};
+
+const saveToFavorites = async () => {
+  if (!inputText.value || !outputText.value || isFavorite.value) return;
+  
+  try {
+    const favoriteItem = {
+      id: Date.now(),
+      input: inputText.value,
+      output: outputText.value,
+      createdAt: new Date().toISOString()
+    };
+    
+    if (chrome?.storage?.local) {
+      const result = await chrome.storage.local.get(["favorites"]);
+      const savedFavorites = result.favorites || [];
+      savedFavorites.push(favoriteItem);
+      await chrome.storage.local.set({ favorites: savedFavorites });
+      favorites.value = savedFavorites;
+    } else {
+      const savedFavorites = localStorage.getItem("favorites");
+      const parsedFavorites = savedFavorites ? JSON.parse(savedFavorites) : [];
+      parsedFavorites.push(favoriteItem);
+      localStorage.setItem("favorites", JSON.stringify(parsedFavorites));
+      favorites.value = parsedFavorites;
+    }
+    
+    isFavorite.value = true;
+  } catch (err) {
+    error.value = "Failed to save to favorites. Please try again.";
+    console.error(err);
   }
 };
 
