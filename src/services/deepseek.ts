@@ -57,6 +57,7 @@ const getApiProvider = async () => {
 async function makeRequest(prompt: string, temperature: number) {
   const apiProvider = await getApiProvider();
   const model = getModel(apiProvider);
+  const requestTemperature = apiProvider === "kimi" ? 1 : temperature;
 
   const response = await client.post("", {
     model,
@@ -66,7 +67,7 @@ async function makeRequest(prompt: string, temperature: number) {
         content: prompt,
       },
     ],
-    temperature,
+    temperature: requestTemperature,
   });
 
   return response.data.choices[0].message.content.trim();
