@@ -74,14 +74,14 @@ async function makeRequest(prompt: string, temperature: number) {
 
 const getModel = (provider: string) => {
   if (provider === "azure") return "azure-chat";
-  if (provider === "kimi") return "moonshot-v1-8k";
+  if (provider === "kimi") return "kimi-k2.6";
   return "deepseek-chat";
 };
 
 export async function translateText(
   text: string,
   from: "en" | "zh",
-  to: "en" | "zh"
+  to: "en" | "zh",
 ): Promise<string> {
   try {
     const prompt = `Translate the following ${
@@ -130,7 +130,9 @@ export async function generateCucumberSyntax(text: string): Promise<string> {
   }
 }
 
-export async function translateWordWithEtymology(word: string): Promise<string> {
+export async function translateWordWithEtymology(
+  word: string,
+): Promise<string> {
   try {
     const prompt = `翻译下面的英文单词并解释对应词根:
     ${word}`;
